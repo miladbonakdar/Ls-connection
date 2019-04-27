@@ -7,6 +7,6 @@ namespace RayanCnc.LSConnection.Events
 {
     internal interface ILSEventArgs
     {
-        PacketInfo PacketInfo { set; get; }
+        object Packet { set; get; }
     }
 }

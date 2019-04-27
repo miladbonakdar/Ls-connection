@@ -84,42 +84,50 @@ namespace RayanCnc.LSConnection
 
         public void SetDefaultPlcModel(IPlcModel plcModel) => DefaultPlcModel = plcModel;
 
-        public async Task<IPlcResponse> SendMessageAsync(IPlcRequest request)
+        public async Task<IPlcResponse> SendMessageAsync<T>(IPlcRequest request)
         {
             await NetworkStream.WriteAsync(request.Data, 0, request.Data.Length);
             byte[] response = new byte[LsConnectionStatics.MaxPlcResponseLength];
             var bytesCount = await NetworkStream.ReadAsync(response, 0, response.Length);
+            var raw = response.SubArray(0, bytesCount);
+            (request.Packet as Packet<T>).SetRawValue(raw);
             return new PlcResponse
             {
-                RawResponse =
-                response.SubArray(0, bytesCount),
+                RawResponse = raw,
                 CreatedOn = DateTime.Now,
-                ResponsedOn = DateTime.Now
+                ResponsedOn = DateTime.Now,
+                Packet = request.Packet
             };
         }
 
-        public async Task<IPlcResponse> ReadAsync<T>(IPacket<T> packet) => await SendMessageAsync(new PlcRequest
+        public async Task<IPlcResponse> ReadAsync<T>(IPacket<T> packet) => await SendMessageAsync<T>(new PlcRequest
         {
-            PacketInfo = (PacketInfo)packet,
+            Packet = packet,
             CreatedOn = DateTime.Now,
             StartedOn = DateTime.Now,
             RequestedFrom = "",
-            Data = packet.RequestPacketHeader
+            Data = packet.RawData
         });
 
-        public async Task<IPlcResponse> WriteAsync<T>(IPacket<T> packet) => await SendMessageAsync(new PlcRequest
+        public async Task<IPlcResponse> WriteAsync<T>(IPacket<T> packet) => await SendMessageAsync<T>(new PlcRequest
         {
-            PacketInfo = (PacketInfo)packet,
+            Packet = packet,
             CreatedOn = DateTime.Now,
             StartedOn = DateTime.Now,
             RequestedFrom = "",
-            Data = packet.RequestPacketHeader
+            Data = packet.RawData
         });
 
         public async Task<IPlcResponse> ReadAsync<T>(ILsAddress address) =>
             await ReadAsync<T>(new Packet<T>(address));
 
+        public async Task<IPlcResponse> ReadAsync<T>(string address) =>
+            await ReadAsync<T>(new Packet<T>(address));
+
         public async Task<IPlcResponse> WriteAsync<T>(ILsAddress address, T value) =>
+            await WriteAsync(new Packet<T>(value, address));
+
+        public async Task<IPlcResponse> WriteAsync<T>(string address, T value) =>
             await WriteAsync(new Packet<T>(value, address));
 
         public async Task<bool> PingAsync()

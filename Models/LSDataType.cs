@@ -4,5 +4,5 @@ using System.Text;
 
 namespace RayanCnc.LSConnection.Models
 {
-    public enum LsDataType { Bit, Byte, Word, Dword, Continuous, NotSeted };
+    public enum LsDataType { Bit, Byte, Word, Dword, Continuous };
 }

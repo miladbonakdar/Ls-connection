@@ -18,5 +18,8 @@ namespace RayanCnc.LSConnection.Contracts
         byte[] RequestPacketInformation { set; get; }
         byte[] RequestPackeInstruction { set; get; }
         byte[] RawData { get; }
+        byte[] RawResponse { get; }
+
+        void SetRawValue(byte[] raw);
     }
 }

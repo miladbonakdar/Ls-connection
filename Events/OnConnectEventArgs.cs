@@ -6,7 +6,7 @@ namespace RayanCnc.LSConnection.Events
 {
     public class OnConnectEventArgs : ILSEventArgs, IHistory
     {
-        public PacketInfo PacketInfo { get; set; }
+        public object Packet { get; set; }
         public DateTime CreatedOn { get; set; }
     }
 }

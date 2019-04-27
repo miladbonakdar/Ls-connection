@@ -11,32 +11,32 @@ namespace RayanCnc.LSConnection.Models
     {
         public Packet(T value, ILsAddress address)
         {
-            Init();
             Value = value;
             Address = address;
             ActionType = ActionType.Write;
+            Init();
         }
 
         public Packet(ILsAddress address)
         {
-            Init();
             Address = address;
             ActionType = ActionType.Read;
+            Init();
         }
 
         public Packet(T value, string address)
         {
-            Init();
             Value = value;
             Address = new LsAddress(address);
             ActionType = ActionType.Write;
+            Init();
         }
 
         public Packet(string address)
         {
-            Init();
             Address = new LsAddress(address);
             ActionType = ActionType.Read;
+            Init();
         }
 
         private void Init()
@@ -77,7 +77,7 @@ namespace RayanCnc.LSConnection.Models
 
         private void CreateByteArray()
         {
-            CreatePacketInstruction();
+            CreatePacketInstruction();//it should be first. because we need the array length
             CreatePacketInformation();
             RequestPacketHeader = LSConnection.DefaultPlcModel.PacketHeader;
         }
@@ -85,26 +85,66 @@ namespace RayanCnc.LSConnection.Models
         private void CreatePacketInstruction()
         {
             byte[] insHead = CreateInstructionBasicHeader();
+            if (ActionType == ActionType.Read)
+            {
+                RequestPackeInstruction = new byte[insHead.Length + Address.AddressBytes.Length];
+                Buffer.BlockCopy(insHead, 0, RequestPackeInstruction, 0, insHead.Length);
+                Buffer.BlockCopy(Address.AddressBytes, 0, RequestPackeInstruction, insHead.Length, Address.AddressBytes.Length);
+            }
+            else
+            {
+                var writeInstructionBytes = CreateWriteInstructionBytes();
+                RequestPackeInstruction = new byte[insHead.Length + Address.AddressBytes.Length + writeInstructionBytes.Length];
+                Buffer.BlockCopy(insHead, 0, RequestPackeInstruction, 0, insHead.Length);
+                Buffer.BlockCopy(Address.AddressBytes, 0, RequestPackeInstruction, insHead.Length, Address.AddressBytes.Length);
+                Buffer.BlockCopy(writeInstructionBytes, 0, RequestPackeInstruction, Address.AddressBytes.Length + insHead.Length, writeInstructionBytes.Length);
+            }
+        }
 
+        private byte[] CreateWriteInstructionBytes()
+        {
+            byte[] valueBytes;
             switch (DataTpe)
             {
                 case LsDataType.Bit:
-                    break;
+                    valueBytes = new byte[3];
+                    valueBytes[0] = Address.ValueSizeInstructionHeaderBytes[0];
+                    valueBytes[1] = Address.ValueSizeInstructionHeaderBytes[1];
+                    valueBytes[2] = BitConverter.GetBytes((bool)(object)Value)[0];
+                    return valueBytes;
 
                 case LsDataType.Byte:
-                    break;
+                    valueBytes = new byte[3];
+                    valueBytes[0] = Address.ValueSizeInstructionHeaderBytes[0];
+                    valueBytes[1] = Address.ValueSizeInstructionHeaderBytes[1];
+                    valueBytes[2] = BitConverter.GetBytes((byte)(object)Value)[0];
+                    return valueBytes;
 
                 case LsDataType.Word:
-                    break;
+                    valueBytes = new byte[4];
+                    valueBytes[0] = Address.ValueSizeInstructionHeaderBytes[0];
+                    valueBytes[1] = Address.ValueSizeInstructionHeaderBytes[1];
+                    var convertedWordBytes = BitConverter.GetBytes((ushort)(object)Value);
+                    valueBytes[2] = convertedWordBytes[0];
+                    valueBytes[3] = convertedWordBytes[1];
+                    return valueBytes;
 
                 case LsDataType.Dword:
-                    break;
+                    valueBytes = new byte[6];
+                    valueBytes[0] = Address.ValueSizeInstructionHeaderBytes[0];
+                    valueBytes[1] = Address.ValueSizeInstructionHeaderBytes[1];
+                    var convertedDWordBytes = BitConverter.GetBytes((uint)(object)Value);
+                    valueBytes[2] = convertedDWordBytes[0];
+                    valueBytes[3] = convertedDWordBytes[1];
+                    valueBytes[4] = convertedDWordBytes[2];
+                    valueBytes[5] = convertedDWordBytes[3];
+                    return valueBytes;
 
                 case LsDataType.Continuous:
-                    break;
-
-                case LsDataType.NotSeted:
-                    break;
+                    valueBytes = new byte[2];
+                    valueBytes[0] = Address.ValueSizeInstructionHeaderBytes[0];
+                    valueBytes[1] = Address.ValueSizeInstructionHeaderBytes[1];
+                    return valueBytes;
 
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -160,6 +200,14 @@ namespace RayanCnc.LSConnection.Models
             return sum;
         }
 
+        public void SetRawValue(byte[] raw)
+        {
+            RawResponse = raw;
+            throw new NotImplementedException();
+        }
+
         public DateTime CreatedOn { get; set; }
+
+        public byte[] RawResponse { get; private set; }
     }
 }

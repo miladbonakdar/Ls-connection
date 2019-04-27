@@ -8,7 +8,7 @@ namespace RayanCnc.LSConnection.Events
 {
     public class OnDisconncetedEventArgs : ILSEventArgs, IHistory
     {
-        public PacketInfo PacketInfo { get; set; }
+        public object Packet { get; set; }
         public DateTime CreatedOn { set; get; }
     }
 }

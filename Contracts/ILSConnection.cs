@@ -34,7 +34,7 @@ namespace RayanCnc.LSConnection.Contracts
 
         void SetDefaultPlcModel(IPlcModel plcModel);
 
-        Task<IPlcResponse> SendMessageAsync(IPlcRequest request);
+        Task<IPlcResponse> SendMessageAsync<T>(IPlcRequest request);
 
         Task<IPlcResponse> ReadAsync<T>(IPacket<T> packet);
 

@@ -4,6 +4,6 @@ namespace RayanCnc.LSConnection.Events
 {
     public class OnReadedSuccessfullyEventArgs : ILSEventArgs
     {
-        public PacketInfo PacketInfo { get; set; }
+        public object Packet { get; set; }
     }
 }

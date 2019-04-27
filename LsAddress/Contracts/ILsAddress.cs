@@ -16,8 +16,9 @@ namespace RayanCNC.LSConnection.LsAddress.Contracts
         long StartAddressDWord { get; }
         long EndAddressDWord { get; }
         string MemoryAddress { set; get; }
-        byte[] DataTypeInstructionHeaderBytes { set; get; }
+        byte[] DataTypeInstructionHeaderBytes { get; }
         byte[] AddressBytes { get; }
+        byte[] ValueSizeInstructionHeaderBytes { get; }
         LsDataType LsDataType { set; get; }
     }
 }

@@ -12,6 +12,5 @@ namespace RayanCnc.LSConnection.Models
         public byte[] Data { get; set; }
         public string RequestedFrom { get; set; }
         public object Packet { get; set; }
-        public PacketInfo PacketInfo { get; set; }
     }
 }

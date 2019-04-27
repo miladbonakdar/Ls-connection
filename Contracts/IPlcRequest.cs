@@ -10,6 +10,5 @@ namespace RayanCnc.LSConnection.Contracts
         byte[] Data { set; get; }
         string RequestedFrom { set; get; }
         object Packet { get; set; }
-        PacketInfo PacketInfo { get; set; }
     }
 }

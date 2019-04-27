@@ -9,6 +9,5 @@ namespace RayanCnc.LSConnection.Contracts
         byte[] RawResponse { set; get; }
 
         object Packet { get; set; }
-        PacketInfo PacketInfo { get; set; }
     }
 }

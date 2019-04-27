@@ -34,7 +34,7 @@ namespace RayanCNC.LSConnection.LsAddress
                 LsDataType = dataType,
                 StartAddressBit = GetValidAddressInPlcRange(addressTuple.Item1, dataType)
             };
-            address.EndAddressBit = addressTuple.Item2 != null ? GetValidAddressInPlcRange(addressTuple.Item2.Value, dataType) 
+            address.EndAddressBit = addressTuple.Item2 != null ? GetValidAddressInPlcRange(addressTuple.Item2.Value, dataType)
                 : GetValidAddressInPlcRange(addressTuple.Item1 + 1, dataType);
             address.MemoryAddress = addressString.Split(',')[0];
             address.DataTypeInstructionHeaderBytes = GetDataTypeInstructionHeaderBytes(address.LsDataType);
@@ -65,7 +65,32 @@ namespace RayanCNC.LSConnection.LsAddress
             }
         }
 
-        private static long GetValidAddressInPlcRange(long address, LsDataType dataType = LsDataType.NotSeted)
+        private byte[] GetDataTypeValueBytes()
+        {
+            switch (LsDataType)
+            {
+                case LsDataType.Bit:
+                    return new byte[] { 0x1, 0x00 };
+
+                case LsDataType.Byte:
+                    return new byte[] { 0x01, 0x00 };
+
+                case LsDataType.Word:
+                    return new byte[] { 0x02, 0x00 };
+
+                case LsDataType.Dword:
+                    return new byte[] { 0x04, 0x00 };
+
+                case LsDataType.Continuous:
+                    byte[] valueSize = BitConverter.GetBytes(EndAddressByte - StartAddressByte);
+                    return new byte[] { valueSize[0], valueSize[1] };
+
+                default:
+                    throw new Exception("Unmanaged datatype");
+            }
+        }
+
+        private static long GetValidAddressInPlcRange(long address, LsDataType dataType = LsDataType.Bit)
         {
             switch (dataType)
             {
@@ -135,9 +160,6 @@ namespace RayanCNC.LSConnection.LsAddress
                     return "D";
 
                 case LsDataType.Continuous:
-                    return "B";
-
-                case LsDataType.NotSeted:
                     return "B";
 
                 default:

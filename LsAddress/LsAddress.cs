@@ -27,8 +27,9 @@ namespace RayanCNC.LSConnection.LsAddress
         public long StartAddressDWord => StartAddressBit / 32;
         public long EndAddressDWord => EndAddressBit / 32;
         public string MemoryAddress { get; set; }
-        public byte[] DataTypeInstructionHeaderBytes { get; set; }// 2 bytes for data type header
+        public byte[] DataTypeInstructionHeaderBytes { get; private set; }// 2 bytes for data type header
         public byte[] AddressBytes => Encoding.ASCII.GetBytes(MemoryAddress);// address of the memory in bytes
+        public byte[] ValueSizeInstructionHeaderBytes { get; private set; }// address of the memory in bytes
         public LsDataType LsDataType { get; set; }
 
         private LsAddress()
@@ -43,6 +44,7 @@ namespace RayanCNC.LSConnection.LsAddress
             EndAddressBit = address.EndAddressBit;
             MemoryAddress = address.MemoryAddress;
             DataTypeInstructionHeaderBytes = address.DataTypeInstructionHeaderBytes;
+            ValueSizeInstructionHeaderBytes = GetDataTypeValueBytes();
         }
 
         public LsAddress(long address, LsDataType dataType)
@@ -52,7 +54,9 @@ namespace RayanCNC.LSConnection.LsAddress
             EndAddressBit = GetValidAddressInPlcRange(address + 1, dataType);
             MemoryAddress = "%M" + GetDataTypeString(dataType) + address.ToString();
             DataTypeInstructionHeaderBytes = GetDataTypeInstructionHeaderBytes(dataType);
+            ValueSizeInstructionHeaderBytes = GetDataTypeValueBytes();
         }
+
         public LsAddress(long startByteAddress, long endByteAddress)
         {
             LsDataType = LsDataType.Continuous;
@@ -60,6 +64,7 @@ namespace RayanCNC.LSConnection.LsAddress
             EndAddressBit = GetValidAddressInPlcRange(endByteAddress, LsDataType);
             MemoryAddress = "%M" + GetDataTypeString(LsDataType) + startByteAddress.ToString();
             DataTypeInstructionHeaderBytes = GetDataTypeInstructionHeaderBytes(LsDataType);
+            ValueSizeInstructionHeaderBytes = GetDataTypeValueBytes();
         }
     }
 }

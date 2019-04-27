@@ -11,6 +11,5 @@ namespace RayanCnc.LSConnection.Models
         public DateTime ResponsedOn { get; set; }
         public byte[] RawResponse { get; set; }
         public object Packet { get; set; }
-        public PacketInfo PacketInfo { get; set; }
     }
 }
