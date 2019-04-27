@@ -27,13 +27,15 @@ namespace RayanCNC.LSConnection.LsAddress
 
         private static LsAddress ParseString(string addressString)
         {
+            var dataType = GetDataType(addressString);
             var addressTuple = GetAddressTuple(addressString);
             LsAddress address = new LsAddress
             {
-                LsDataType = GetDataType(addressString),
-                StartAddressBit = addressTuple.Item1
+                LsDataType = dataType,
+                StartAddressBit = GetValidAddressInPlcRange(addressTuple.Item1, dataType)
             };
-            address.EndAddressBit = addressTuple.Item2 ?? addressTuple.Item1 + GetDataTypeAddressDistance(address.LsDataType);
+            address.EndAddressBit = addressTuple.Item2 != null ? GetValidAddressInPlcRange(addressTuple.Item2.Value, dataType) 
+                : GetValidAddressInPlcRange(addressTuple.Item1 + 1, dataType);
             address.MemoryAddress = addressString.Split(',')[0];
             address.DataTypeInstructionHeaderBytes = GetDataTypeInstructionHeaderBytes(address.LsDataType);
             return address;
@@ -57,28 +59,6 @@ namespace RayanCNC.LSConnection.LsAddress
 
                 case LsDataType.Continuous:
                     return new byte[] { 0x14, 0x00 };
-
-                default:
-                    throw new Exception("Unmanaged datatype");
-            }
-        }
-
-        private static ushort GetDataTypeAddressDistance(LsDataType lsDataType)
-        {
-            switch (lsDataType)
-            {
-                case LsDataType.Bit:
-                    return 1;
-
-                case LsDataType.Byte:
-                case LsDataType.Continuous:
-                    return 8;
-
-                case LsDataType.Word:
-                    return 16;
-
-                case LsDataType.Dword:
-                    return 32;
 
                 default:
                     throw new Exception("Unmanaged datatype");
@@ -172,7 +152,7 @@ namespace RayanCNC.LSConnection.LsAddress
             if (!addressString.StartWith(new[] { "%", "M", "X", "B", "W", "D" }) || !addressString.ShouldHaveJustOne(_sMemoryTypeChars)) return false;
             if (addressString.StartsWith("M"))
                 addressString = "%" + addressString;
-            if (!addressString.StartWith(_sMemoryTypeChars.ToStringArray()))
+            if (addressString.StartWith(_sMemoryTypeChars.ToStringArray()))
                 addressString = "%M" + addressString;
             string[] subStrings = addressString.Split(',');
             if (subStrings.Length > 2 || subStrings.Length == 0) return false;

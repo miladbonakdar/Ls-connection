@@ -53,5 +53,13 @@ namespace RayanCNC.LSConnection.LsAddress
             MemoryAddress = "%M" + GetDataTypeString(dataType) + address.ToString();
             DataTypeInstructionHeaderBytes = GetDataTypeInstructionHeaderBytes(dataType);
         }
+        public LsAddress(long startByteAddress, long endByteAddress)
+        {
+            LsDataType = LsDataType.Continuous;
+            StartAddressBit = GetValidAddressInPlcRange(startByteAddress, LsDataType);
+            EndAddressBit = GetValidAddressInPlcRange(endByteAddress, LsDataType);
+            MemoryAddress = "%M" + GetDataTypeString(LsDataType) + startByteAddress.ToString();
+            DataTypeInstructionHeaderBytes = GetDataTypeInstructionHeaderBytes(LsDataType);
+        }
     }
 }
