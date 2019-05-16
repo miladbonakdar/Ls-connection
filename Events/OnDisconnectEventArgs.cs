@@ -3,8 +3,8 @@ using System;
 
 namespace RayanCnc.LSConnection.Events
 {
-    public class OnConnectEventArgs : IHistory
+    public class OnDisconnectEventArgs : IHistory
     {
-        public DateTime CreatedOn { get; set; }
+        public DateTime CreatedOn { set; get; }
     }
 }

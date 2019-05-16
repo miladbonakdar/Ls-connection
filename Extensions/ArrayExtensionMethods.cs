@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace RayanCNC.LSConnection.Extentions
+namespace RayanCNC.LSConnection.Extensions
 {
-    public static class ArrayExtentionMethods
+    public static class ArrayExtensionMethods
     {
         public static T[] SubArray<T>(this T[] data, int index, int length)
         {

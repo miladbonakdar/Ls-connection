@@ -1,15 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using RayanCnc.LSConnection.Contracts;
+using RayanCnc.LSConnection.Packet;
 
-namespace RayanCnc.LSConnection.Models
+namespace RayanCnc.LSConnection.PLC
 {
-    public class PlcResponse : IPlcResponse
+    public class PlcResponse<T> : IPlcResponse<T>
     {
         public DateTime CreatedOn { get; set; }
-        public DateTime ResponsedOn { get; set; }
+        public IPacket<T> Packet { get; set; }
         public byte[] RawResponse { get; set; }
-        public object Packet { get; set; }
+        public DateTime ResponseOn { get; set; }
+        public T Value => Packet.Value;
     }
 }

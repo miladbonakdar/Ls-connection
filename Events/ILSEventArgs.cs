@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using RayanCnc.LSConnection.Models;
-
-namespace RayanCnc.LSConnection.Events
+﻿namespace RayanCnc.LSConnection.Events
 {
-    internal interface ILSEventArgs
+    internal interface ILsEventArgs
     {
         object Packet { set; get; }
+        object Request { get; set; }
     }
 }

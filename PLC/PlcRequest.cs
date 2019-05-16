@@ -1,16 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using RayanCnc.LSConnection.Contracts;
+using RayanCnc.LSConnection.Packet;
 
-namespace RayanCnc.LSConnection.Models
+namespace RayanCnc.LSConnection.PLC
 {
-    public class PlcRequest : IPlcRequest
+    public class PlcRequest<T> : IPlcRequest<T>
     {
         public DateTime CreatedOn { get; set; }
-        public DateTime StartedOn { get; set; }
         public byte[] Data { get; set; }
-        public string RequestedFrom { get; set; }
-        public object Packet { get; set; }
+        public IPacket<T> Packet { get; set; }
+        public DateTime StartedOn { get; set; }
     }
 }

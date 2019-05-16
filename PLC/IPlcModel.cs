@@ -1,15 +1,18 @@
 ﻿using System;
 using System.Net;
 
-namespace RayanCnc.LSConnection.Contracts
+namespace RayanCnc.LSConnection.PLC
 {
     public interface IPlcModel
     {
         Guid Id { get; }
-        int PortNumber { get; }
         IPAddress IP { get; }
+        long MemorySize { get; }
         string Name { get; }
-        long MemorySize { get; } // in bit
+
+        // in bit
         byte[] PacketHeader { get; }
+
+        int PortNumber { get; }
     }
 }

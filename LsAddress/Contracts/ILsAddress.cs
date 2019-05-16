@@ -1,24 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using RayanCnc.LSConnection.Models;
+﻿using RayanCnc.LSConnection.Models;
 
 namespace RayanCNC.LSConnection.LsAddress.Contracts
 {
     public interface ILsAddress
     {
-        long StartAddressBit { set; get; }
-        long EndAddressBit { set; get; }
-        long StartAddressByte { get; }
-        long EndAddressByte { get; }
-        long StartAddressWord { get; }
-        long EndAddressWord { get; }
-        long StartAddressDWord { get; }
-        long EndAddressDWord { get; }
-        string MemoryAddress { set; get; }
-        byte[] DataTypeInstructionHeaderBytes { get; }
         byte[] AddressBytes { get; }
-        byte[] ValueSizeInstructionHeaderBytes { get; }
+        byte[] ContinuousAddressDifference { get; }
+        byte[] DataTypeInstructionHeaderBytes { get; }
+        long EndAddressBit { set; get; }
+        long EndAddressByte { get; }
+        long EndAddressDWord { get; }
+        long EndAddressWord { get; }
         LsDataType LsDataType { set; get; }
+        string MemoryAddress { set; get; }
+        long StartAddressBit { set; get; }
+        long StartAddressByte { get; }
+        long StartAddressDWord { get; }
+        long StartAddressWord { get; }
+        byte[] ValueSizeInstructionHeaderBytes { get; }
     }
 }

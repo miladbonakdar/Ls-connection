@@ -1,154 +1,106 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using RayanCnc.LSConnection.Contracts;
+﻿using RayanCnc.LSConnection.Contracts;
+using RayanCnc.LSConnection.DataTypeStrategy;
+using RayanCnc.LSConnection.Models;
 using RayanCNC.LSConnection.LsAddress;
 using RayanCNC.LSConnection.LsAddress.Contracts;
+using System;
 
-namespace RayanCnc.LSConnection.Models
+namespace RayanCnc.LSConnection.Packet
 {
-    public class Packet<T> : IPacket<T>
+    public partial class Packet<T> : IPacket<T>
     {
-        public Packet(T value, ILsAddress address)
+        public Packet(T value, ILsAddress address, byte[] requestPacketHeader)
         {
             Value = value;
             Address = address;
             ActionType = ActionType.Write;
-            Init();
+            Init(requestPacketHeader);
         }
 
-        public Packet(ILsAddress address)
-        {
-            Address = address;
-            ActionType = ActionType.Read;
-            Init();
-        }
-
-        public Packet(T value, string address)
+        public Packet(T value, string address, byte[] requestPacketHeader)
         {
             Value = value;
             Address = new LsAddress(address);
             ActionType = ActionType.Write;
-            Init();
+            Init(requestPacketHeader);
         }
 
-        public Packet(string address)
+        public Packet(ILsAddress address, byte[] requestPacketHeader)
+        {
+            Address = address;
+            ActionType = ActionType.Read;
+            Init(requestPacketHeader);
+        }
+
+        public Packet(string address, byte[] requestPacketHeader)
         {
             Address = new LsAddress(address);
             ActionType = ActionType.Read;
-            Init();
+            Init(requestPacketHeader);
         }
 
-        private void Init()
-        {
-            if (typeof(T) == typeof(bool)) DataTpe = LsDataType.Bit;
-            else if (typeof(T) == typeof(byte)) DataTpe = LsDataType.Byte;
-            else if (typeof(T) == typeof(ushort)) DataTpe = LsDataType.Word;
-            else if (typeof(T) == typeof(uint)) DataTpe = LsDataType.Dword;
-            else if (typeof(T) == typeof(byte[])) DataTpe = LsDataType.Continuous;
-            else throw new ArgumentException("The type of packet is not valid .please check your type first");
-            Id = Guid.NewGuid();
-            Order = s_orderCounter++;
-            CreateByteArray();
-        }
+        public ActionType ActionType { get; }
 
-        private static ushort s_orderCounter = 0;//!DONE!//
-        public Guid Id { set; get; }
-        public T Value { set; get; }
-        public ILsAddress Address { get; set; }
-        public LsDataType DataTpe { set; get; }
-        public ushort Order { get; set; }
-        public ActionType ActionType { get; set; }
-        public byte[] RequestPacketHeader { get; set; }
-        public byte[] RequestPacketInformation { get; set; }
-        public byte[] RequestPackeInstruction { get; set; }
+        public ILsAddress Address { get; }
 
-        public byte[] RawData
+        public DateTime CreatedOn { get; private set; }
+
+        public LsDataType DataType => DataTypeStrategy.DataType;
+
+        public ITypeStrategy DataTypeStrategy { get; private set; }
+
+        //!DONE!//
+        public Guid Id { get; private set; }
+
+        public ushort Order { get; private set; }
+
+        public byte[] RawRequest
         {
             get
             {
-                byte[] rv = new byte[RequestPacketHeader.Length + RequestPackeInstruction.Length + RequestPacketInformation.Length];
+                byte[] rv = new byte[RequestPacketHeader.Length + RequestPacketInstruction.Length + RequestPacketInformation.Length];
                 Buffer.BlockCopy(RequestPacketHeader, 0, rv, 0, RequestPacketHeader.Length);
                 Buffer.BlockCopy(RequestPacketInformation, 0, rv, RequestPacketHeader.Length, RequestPacketInformation.Length);
-                Buffer.BlockCopy(RequestPackeInstruction, 0, rv, RequestPacketHeader.Length + RequestPacketInformation.Length, RequestPackeInstruction.Length);
+                Buffer.BlockCopy(RequestPacketInstruction, 0, rv, RequestPacketHeader.Length + RequestPacketInformation.Length, RequestPacketInstruction.Length);
                 return rv;
             }
+        }
+
+        public byte[] RawResponse { get; private set; }
+
+        public byte[] RequestPacketHeader { get; private set; }
+
+        public byte[] RequestPacketInformation { get; private set; }
+
+        public byte[] RequestPacketInstruction { get; private set; }
+
+        public DateTime ResponseOn { get; private set; }
+
+        public T Value { get; private set; }
+
+        public void ParseRawBytes(byte[] raw)
+        {
+            RawResponse = raw;
+            ResponseOn = DateTime.Now;
+            if (raw[20] == ReadResponseFlag)
+                Value = (T)DataTypeStrategy.HandleReadOperation(raw);
+            if (raw[20] == WriteResponseFlag)
+                DataTypeStrategy.HandleWriteOperation(raw);
+        }
+
+        private ushort CalculateCheckSum(byte[] header)
+        {
+            ushort sum = 0;
+            for (ushort i = 0; i < 5; i++)
+                sum += header[i];
+            sum += 760;
+            return sum;
         }
 
         private void CreateByteArray()
         {
             CreatePacketInstruction();//it should be first. because we need the array length
             CreatePacketInformation();
-            RequestPacketHeader = LSConnection.DefaultPlcModel.PacketHeader;
-        }
-
-        private void CreatePacketInstruction()
-        {
-            byte[] insHead = CreateInstructionBasicHeader();
-            if (ActionType == ActionType.Read)
-            {
-                RequestPackeInstruction = new byte[insHead.Length + Address.AddressBytes.Length];
-                Buffer.BlockCopy(insHead, 0, RequestPackeInstruction, 0, insHead.Length);
-                Buffer.BlockCopy(Address.AddressBytes, 0, RequestPackeInstruction, insHead.Length, Address.AddressBytes.Length);
-            }
-            else
-            {
-                var writeInstructionBytes = CreateWriteInstructionBytes();
-                RequestPackeInstruction = new byte[insHead.Length + Address.AddressBytes.Length + writeInstructionBytes.Length];
-                Buffer.BlockCopy(insHead, 0, RequestPackeInstruction, 0, insHead.Length);
-                Buffer.BlockCopy(Address.AddressBytes, 0, RequestPackeInstruction, insHead.Length, Address.AddressBytes.Length);
-                Buffer.BlockCopy(writeInstructionBytes, 0, RequestPackeInstruction, Address.AddressBytes.Length + insHead.Length, writeInstructionBytes.Length);
-            }
-        }
-
-        private byte[] CreateWriteInstructionBytes()
-        {
-            byte[] valueBytes;
-            switch (DataTpe)
-            {
-                case LsDataType.Bit:
-                    valueBytes = new byte[3];
-                    valueBytes[0] = Address.ValueSizeInstructionHeaderBytes[0];
-                    valueBytes[1] = Address.ValueSizeInstructionHeaderBytes[1];
-                    valueBytes[2] = BitConverter.GetBytes((bool)(object)Value)[0];
-                    return valueBytes;
-
-                case LsDataType.Byte:
-                    valueBytes = new byte[3];
-                    valueBytes[0] = Address.ValueSizeInstructionHeaderBytes[0];
-                    valueBytes[1] = Address.ValueSizeInstructionHeaderBytes[1];
-                    valueBytes[2] = BitConverter.GetBytes((byte)(object)Value)[0];
-                    return valueBytes;
-
-                case LsDataType.Word:
-                    valueBytes = new byte[4];
-                    valueBytes[0] = Address.ValueSizeInstructionHeaderBytes[0];
-                    valueBytes[1] = Address.ValueSizeInstructionHeaderBytes[1];
-                    var convertedWordBytes = BitConverter.GetBytes((ushort)(object)Value);
-                    valueBytes[2] = convertedWordBytes[0];
-                    valueBytes[3] = convertedWordBytes[1];
-                    return valueBytes;
-
-                case LsDataType.Dword:
-                    valueBytes = new byte[6];
-                    valueBytes[0] = Address.ValueSizeInstructionHeaderBytes[0];
-                    valueBytes[1] = Address.ValueSizeInstructionHeaderBytes[1];
-                    var convertedDWordBytes = BitConverter.GetBytes((uint)(object)Value);
-                    valueBytes[2] = convertedDWordBytes[0];
-                    valueBytes[3] = convertedDWordBytes[1];
-                    valueBytes[4] = convertedDWordBytes[2];
-                    valueBytes[5] = convertedDWordBytes[3];
-                    return valueBytes;
-
-                case LsDataType.Continuous:
-                    valueBytes = new byte[2];
-                    valueBytes[0] = Address.ValueSizeInstructionHeaderBytes[0];
-                    valueBytes[1] = Address.ValueSizeInstructionHeaderBytes[1];
-                    return valueBytes;
-
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
         }
 
         private byte[] CreateInstructionBasicHeader()
@@ -157,32 +109,32 @@ namespace RayanCnc.LSConnection.Models
 
             if (ActionType == ActionType.Read)
             {
-                insHead[0] = 0x54;//read
-                insHead[1] = 0x00;//read
+                insHead[0] = ReadInstructionHeader[0];
+                insHead[1] = ReadInstructionHeader[1];
             }
             else
             {
-                insHead[0] = 0x58;//write
-                insHead[1] = 0x00;//write
+                insHead[0] = WriteInstructionHeader[0];
+                insHead[1] = WriteInstructionHeader[1];
             }
             insHead[2] = Address.DataTypeInstructionHeaderBytes[0];
             insHead[3] = Address.DataTypeInstructionHeaderBytes[1];
-            insHead[4] = 0x00;
-            insHead[5] = 0x00;
-            insHead[6] = 0x01;
-            insHead[7] = 0x00;
+            insHead[4] = InstructionHeader[0];
+            insHead[5] = InstructionHeader[1];
+            insHead[6] = InstructionHeader[2];
+            insHead[7] = InstructionHeader[3];
             insHead[8] = (byte)Address.MemoryAddress.Length;
-            insHead[9] = 0x00;
+            insHead[9] = InstructionHeader[4];
             return insHead;
         }
 
         private void CreatePacketInformation()
         {
             RequestPacketInformation = new byte[6];
-            byte[] byteArray = BitConverter.GetBytes(s_orderCounter);
+            byte[] byteArray = BitConverter.GetBytes(_orderCounter);
             RequestPacketInformation[0] = byteArray[0];
             RequestPacketInformation[1] = byteArray[1];
-            byteArray = BitConverter.GetBytes((ushort)RequestPackeInstruction.Length);
+            byteArray = BitConverter.GetBytes((ushort)RequestPacketInstruction.Length);
             RequestPacketInformation[2] = byteArray[0];
             RequestPacketInformation[3] = byteArray[1];
             int checkSum = CalculateCheckSum(RequestPacketInformation);
@@ -191,23 +143,42 @@ namespace RayanCnc.LSConnection.Models
             RequestPacketInformation[5] = byteArray[1];
         }
 
-        private int CalculateCheckSum(byte[] header)
+        private void CreatePacketInstruction()
         {
-            int sum = 0;
-            for (int i = 0; i < 5; i++)
-                sum += header[i];
-            sum += 760;
-            return sum;
+            byte[] insHead = CreateInstructionBasicHeader();
+            if (ActionType == ActionType.Read)
+            {
+                RequestPacketInstruction = new byte[insHead.Length + Address.AddressBytes.Length +
+                                                    (DataType == LsDataType.Continuous ? Address.ContinuousAddressDifference.Length : 0)];
+                Buffer.BlockCopy(insHead, 0, RequestPacketInstruction, 0, insHead.Length);
+                Buffer.BlockCopy(Address.AddressBytes, 0, RequestPacketInstruction,
+                    insHead.Length, Address.AddressBytes.Length);
+                if (DataType == LsDataType.Continuous)
+                {
+                    Buffer.BlockCopy(Address.ContinuousAddressDifference, 0, RequestPacketInstruction,
+                        insHead.Length + Address.AddressBytes.Length, Address.ContinuousAddressDifference.Length);
+                }
+            }
+            else
+            {
+                var writeInstructionBytes = CreateWriteInstructionBytes();
+                RequestPacketInstruction = new byte[insHead.Length + Address.AddressBytes.Length + writeInstructionBytes.Length];
+                Buffer.BlockCopy(insHead, 0, RequestPacketInstruction, 0, insHead.Length);
+                Buffer.BlockCopy(Address.AddressBytes, 0, RequestPacketInstruction, insHead.Length, Address.AddressBytes.Length);
+                Buffer.BlockCopy(writeInstructionBytes, 0, RequestPacketInstruction, Address.AddressBytes.Length + insHead.Length, writeInstructionBytes.Length);
+            }
         }
 
-        public void SetRawValue(byte[] raw)
+        private byte[] CreateWriteInstructionBytes() => DataTypeStrategy.CreateWriteInstructionBytes(Address, Value);
+
+        private void Init(byte[] requestPacketHeader)
         {
-            RawResponse = raw;
-            throw new NotImplementedException();
+            DataTypeStrategy = TypeStrategy.GetDataTypeStrategy(typeof(T));
+            Id = Guid.NewGuid();
+            Order = _orderCounter++;
+            CreateByteArray();
+            CreatedOn = DateTime.Now;
+            RequestPacketHeader = requestPacketHeader;
         }
-
-        public DateTime CreatedOn { get; set; }
-
-        public byte[] RawResponse { get; private set; }
     }
 }
