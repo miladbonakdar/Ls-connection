@@ -22,7 +22,7 @@ namespace RayanCnc.LSConnection.DataTypeStrategy
 
         public override object ParseReadData(byte[] data)
         {
-            var array = new byte[data[30]];
+            var array = new byte[data[30] + (data[31] * 256)];
             Buffer.BlockCopy(data, 32, array, 0, array.Length);
             return array;
         }
