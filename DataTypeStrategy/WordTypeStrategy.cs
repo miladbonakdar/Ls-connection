@@ -6,7 +6,10 @@ namespace RayanCnc.LSConnection.DataTypeStrategy
 {
     internal class WordTypeStrategy : TypeStrategy
     {
+        public WordTypeStrategy(Type valueType) => ValueType = valueType;
+
         public override LsDataType DataType => LsDataType.Word;
+        public override Type ValueType { get; }
 
         public override byte[] CreateWriteInstructionBytes(ILsAddress address, object value)
         {
@@ -21,6 +24,7 @@ namespace RayanCnc.LSConnection.DataTypeStrategy
 
         public override object HandleReadOperation(byte[] raw) => ParseReadData(raw);
 
-        public override object ParseReadData(byte[] data) => BitConverter.ToUInt16(data, data.Length - 2);
+        public override object ParseReadData(byte[] data) =>
+            TypeStrategyValueConverter.Convert(ValueType, data);
     }
 }

@@ -1,14 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using RayanCnc.LSConnection.Models;
+﻿using RayanCnc.LSConnection.Models;
 using RayanCNC.LSConnection.LsAddress.Contracts;
+using System;
 
 namespace RayanCnc.LSConnection.DataTypeStrategy
 {
     internal class DwordTypeStrategy : TypeStrategy
     {
+        public DwordTypeStrategy(Type valueType) => ValueType = valueType;
+
         public override LsDataType DataType => LsDataType.Dword;
+        public override Type ValueType { get; }
 
         public override byte[] CreateWriteInstructionBytes(ILsAddress address, object value)
         {
@@ -25,6 +26,7 @@ namespace RayanCnc.LSConnection.DataTypeStrategy
 
         public override object HandleReadOperation(byte[] raw) => ParseReadData(raw);
 
-        public override object ParseReadData(byte[] data) => BitConverter.ToUInt32(data, data.Length - 4);
+        public override object ParseReadData(byte[] data) =>
+            TypeStrategyValueConverter.Convert(ValueType, data);
     }
 }

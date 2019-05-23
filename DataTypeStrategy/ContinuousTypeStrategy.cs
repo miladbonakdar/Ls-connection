@@ -6,7 +6,10 @@ namespace RayanCnc.LSConnection.DataTypeStrategy
 {
     internal class ContinuousTypeStrategy : TypeStrategy
     {
+        public ContinuousTypeStrategy(Type valueType) => ValueType = valueType;
+
         public override LsDataType DataType => LsDataType.Continuous;
+        public override Type ValueType { get; }
 
         public override byte[] CreateWriteInstructionBytes(ILsAddress address, object value)
         {

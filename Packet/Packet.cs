@@ -4,6 +4,7 @@ using RayanCnc.LSConnection.Models;
 using RayanCNC.LSConnection.LsAddress;
 using RayanCNC.LSConnection.LsAddress.Contracts;
 using System;
+using RayanCnc.LSConnection.Extensions;
 
 namespace RayanCnc.LSConnection.Packet
 {
@@ -83,7 +84,9 @@ namespace RayanCnc.LSConnection.Packet
             RawResponse = raw;
             ResponseOn = DateTime.Now;
             if (raw[20] == ReadResponseFlag)
+            {
                 Value = (T)DataTypeStrategy.HandleReadOperation(raw);
+            }
             if (raw[20] == WriteResponseFlag)
                 DataTypeStrategy.HandleWriteOperation(raw);
         }
@@ -174,6 +177,8 @@ namespace RayanCnc.LSConnection.Packet
         private void Init(byte[] requestPacketHeader)
         {
             DataTypeStrategy = TypeStrategy.GetDataTypeStrategy(typeof(T));
+            if (DataTypeStrategy.DataType != Address.LsDataType)
+                throw new LsDataTypeConflictException(DataTypeStrategy.DataType, Address.LsDataType);
             Id = Guid.NewGuid();
             Order = _orderCounter++;
             CreateByteArray();

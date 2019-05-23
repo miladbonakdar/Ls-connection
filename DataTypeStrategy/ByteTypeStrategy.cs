@@ -6,7 +6,10 @@ namespace RayanCnc.LSConnection.DataTypeStrategy
 {
     internal class ByteTypeStrategy : TypeStrategy
     {
+        public ByteTypeStrategy(Type valueType) => ValueType = valueType;
+
         public override LsDataType DataType => LsDataType.Byte;
+        public override Type ValueType { get; }
 
         public override byte[] CreateWriteInstructionBytes(ILsAddress address, object value)
         {

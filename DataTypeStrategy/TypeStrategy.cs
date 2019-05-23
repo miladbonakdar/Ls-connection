@@ -8,14 +8,15 @@ namespace RayanCnc.LSConnection.DataTypeStrategy
     public abstract class TypeStrategy : ITypeStrategy
     {
         public abstract LsDataType DataType { get; }
+        public abstract Type ValueType { get; }
 
         public static TypeStrategy GetDataTypeStrategy(Type valueType)
         {
-            if (valueType == typeof(bool)) return new BitTypeStrategy();
-            if (valueType == typeof(byte)) return new ByteTypeStrategy();
-            if (valueType == typeof(ushort) || valueType == typeof(int)) return new WordTypeStrategy();
-            if (valueType == typeof(uint) || valueType == typeof(long)) return new DwordTypeStrategy();
-            if (valueType == typeof(byte[])/* || valueType == typeof(List<byte>)*/) return new ContinuousTypeStrategy();
+            if (valueType == typeof(bool)) return new BitTypeStrategy(valueType);
+            if (valueType == typeof(byte)) return new ByteTypeStrategy(valueType);
+            if (valueType == typeof(ushort) || valueType == typeof(short)) return new WordTypeStrategy(valueType);
+            if (valueType == typeof(uint) || valueType == typeof(int)) return new DwordTypeStrategy(valueType);
+            if (valueType == typeof(byte[])/* || valueType == typeof(List<byte>)*/) return new ContinuousTypeStrategy(valueType);
             throw new ArgumentException("The type of packet is not valid .please check your type first");
         }
 

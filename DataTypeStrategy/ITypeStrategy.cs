@@ -1,4 +1,5 @@
-﻿using RayanCnc.LSConnection.Models;
+﻿using System;
+using RayanCnc.LSConnection.Models;
 using RayanCNC.LSConnection.LsAddress.Contracts;
 
 namespace RayanCnc.LSConnection.DataTypeStrategy
@@ -6,6 +7,7 @@ namespace RayanCnc.LSConnection.DataTypeStrategy
     public interface ITypeStrategy
     {
         LsDataType DataType { get; }
+        Type ValueType { get; }
 
         byte[] CreateWriteInstructionBytes(ILsAddress address, object value);
 
