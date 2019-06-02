@@ -2,6 +2,7 @@
 using RayanCnc.LSConnection.Events;
 using RayanCnc.LSConnection.Models;
 using RayanCnc.LSConnection.Packet;
+using RayanCnc.LSConnection.PLC;
 using RayanCNC.LSConnection.Exceptions;
 using RayanCNC.LSConnection.Extensions;
 using RayanCNC.LSConnection.LsAddress.Contracts;
@@ -11,7 +12,6 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
-using RayanCnc.LSConnection.PLC;
 
 namespace RayanCnc.LSConnection
 {
@@ -23,7 +23,6 @@ namespace RayanCnc.LSConnection
         {
             Connection = this;
             PlcModel = plcModel ?? DefaultPlcModel;
-            Client = new TcpClient();
         }
 
         public event EventHandler<OnConnectEventArgs> OnConnect;
@@ -36,7 +35,7 @@ namespace RayanCnc.LSConnection
 
         public static ILsConnection Connection { get; private set; }
         public static IPlcModel DefaultPlcModel { get; private set; } = new PlcModel();
-        public TcpClient Client { get; set; }
+        public TcpClient Client { get; private set; }
 
         public bool Connected
         {
@@ -51,17 +50,19 @@ namespace RayanCnc.LSConnection
             }
         }
 
-        public Stream NetworkStream { get; set; }
-        public IPlcModel PlcModel { get; set; }
+        public Stream NetworkStream { get; private set; }
+        public IPlcModel PlcModel { get; protected set; }
 
         public static void SetDefaultPlcModel(IPlcModel plcModel) => DefaultPlcModel = plcModel;
 
         //https://msdn.microsoft.com/en-us/magazine/dn605876.aspx
         public async Task<ILsConnection> ConnectAsync()
         {
-            if (!await PingAsync()) throw new LsConnectionException("We cannot find the server . please check the Ip first");
+            if (!await PingAsync())
+                throw new LsConnectionException("We cannot find the server . please check the Ip first");
             try
             {
+                Client = new TcpClient();
                 await Client.ConnectAsync(PlcModel.IP, PlcModel.PortNumber);
                 Connected = true;
                 NetworkStream = Client.GetStream();
@@ -76,15 +77,18 @@ namespace RayanCnc.LSConnection
         public void Disconnect()
         {
             Connected = false;
-            Client?.Dispose();
-            NetworkStream?.Dispose();
-            Client?.Dispose();
             MakeEmpty();
         }
 
-        public void Dispose() => Disconnect();
+        public void Dispose()
+        {
+            NetworkStream?.Dispose();
+            Client?.Dispose();
+            Disconnect();
+        }
 
-        public void MakeEmpty() => NetworkStream = null;
+        public void MakeEmpty()
+            => (NetworkStream, Client) = (null, null);
 
         public async Task<bool> PingAsync()
         {
@@ -126,6 +130,9 @@ namespace RayanCnc.LSConnection
 
         public async Task<IPlcResponse<T>> SendMessageAsync<T>(IPlcRequest<T> request)
         {
+            if (!Connected)
+                throw new InvalidOperationException("the connection is not connected yet");
+
             await NetworkStream.WriteAsync(request.Data, 0, request.Data.Length);
             byte[] response = new byte[LsConnectionStatics.MaxPlcResponseLength];
             var bytesCount = await NetworkStream.ReadAsync(response, 0, response.Length);

@@ -19,10 +19,10 @@ namespace RayanCnc.LSConnection.Contracts
 
         event EventHandler<OnWriteSuccessfullyEventArgs> OnWriteSuccessfully;
 
-        TcpClient Client { set; get; }
-        bool Connected { set; get; }
-        Stream NetworkStream { set; get; }
-        IPlcModel PlcModel { set; get; }
+        TcpClient Client { get; }
+        bool Connected { get; }
+        Stream NetworkStream { get; }
+        IPlcModel PlcModel { get; }
 
         Task<ILsConnection> ConnectAsync();
 
