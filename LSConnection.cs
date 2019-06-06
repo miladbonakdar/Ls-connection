@@ -40,8 +40,9 @@ namespace RayanCnc.LSConnection
         public bool Connected
         {
             get => _connected;
-            set
+            protected set
             {
+                if (_connected == value) return;
                 _connected = value;
                 if (value)
                     OnConnect?.Invoke(this, null);
@@ -64,8 +65,8 @@ namespace RayanCnc.LSConnection
             {
                 Client = new TcpClient();
                 await Client.ConnectAsync(PlcModel.IP, PlcModel.PortNumber);
-                Connected = true;
                 NetworkStream = Client.GetStream();
+                Connected = true;
             }
             catch (Exception ex)
             {
@@ -76,8 +77,8 @@ namespace RayanCnc.LSConnection
 
         public void Disconnect()
         {
-            Connected = false;
             MakeEmpty();
+            Connected = false;
         }
 
         public void Dispose()
@@ -136,6 +137,7 @@ namespace RayanCnc.LSConnection
             await NetworkStream.WriteAsync(request.Data, 0, request.Data.Length);
             byte[] response = new byte[LsConnectionStatics.MaxPlcResponseLength];
             var bytesCount = await NetworkStream.ReadAsync(response, 0, response.Length);
+            if (bytesCount == 0) { Disconnect(); return null; }
             var raw = response.SubArray(0, bytesCount);
             HandleRawResponse(request, raw);
             return new PlcResponse<T>
