@@ -7,6 +7,7 @@ using RayanCNC.LSConnection.Exceptions;
 using RayanCNC.LSConnection.Extensions;
 using RayanCNC.LSConnection.LsAddress.Contracts;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -17,12 +18,14 @@ namespace RayanCnc.LSConnection
 {
     public class LsConnection : ILsConnection, IPing, IDisposable
     {
+        private static readonly List<ILsConnection> Connections = new List<ILsConnection>();
         private bool _connected;
 
         public LsConnection(IPlcModel plcModel = null)
         {
             Connection = this;
             PlcModel = plcModel ?? DefaultPlcModel;
+            Connections.Add(this);
         }
 
         public event EventHandler<OnConnectEventArgs> OnConnect;
@@ -103,7 +106,7 @@ namespace RayanCnc.LSConnection
             }
             catch (PingException)
             {
-                Disconnect();
+                DisconnectAll();
                 return false;
             }
             catch (Exception e) { throw new LsPingException(e.Message, e); }
@@ -137,7 +140,11 @@ namespace RayanCnc.LSConnection
             await NetworkStream.WriteAsync(request.Data, 0, request.Data.Length);
             byte[] response = new byte[LsConnectionStatics.MaxPlcResponseLength];
             var bytesCount = await NetworkStream.ReadAsync(response, 0, response.Length);
-            if (bytesCount == 0) { Disconnect(); return null; }
+            if (bytesCount == 0)
+            {
+                DisconnectAll();
+                return null;
+            }
             var raw = response.SubArray(0, bytesCount);
             HandleRawResponse(request, raw);
             return new PlcResponse<T>
@@ -169,6 +176,9 @@ namespace RayanCnc.LSConnection
         public async Task<IPlcResponse<T>> WriteResponseAsync<T>(string address, T value) =>
             await WriteAsync(new Packet<T>(value, address, PlcModel.PacketHeader));
 
+        private static void DisconnectAll()
+                                                    => Connections.ForEach(c => c.Disconnect());
+
         private void HandleRawResponse<T>(IPlcRequest<T> request, byte[] raw)
         {
             request.Packet.ParseRawBytes(raw);
@@ -178,9 +188,12 @@ namespace RayanCnc.LSConnection
                     OnReadSuccessfully?.Invoke(this, new OnReadedSuccessfullyEventArgs { Packet = request.Packet });
                     break;
 
-                default:
+                case ActionType.Write:
                     OnWriteSuccessfully?.Invoke(this, new OnWriteSuccessfullyEventArgs { Packet = request.Packet });
                     break;
+
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
         }
     }
